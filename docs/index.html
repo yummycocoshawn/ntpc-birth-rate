@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>新北市出生率</title>
+<meta name="description" content="新北市(2010 年前為臺北縣)歷年粗出生率、出生數、男女嬰、各行政區與生母年齡的互動式圖表。">
+<style>
+:root{
+  --bg:#f6f4f0; --card:#ffffff; --text:#1f2328; --muted:#5f6670; --line:#e3ded6; --soft:#efebe4;
+  --main:#d9480f; --accent:#0b7285; --warn-bg:#fff4e0; --warn-line:#e8b44c;
+  --c-male:#2b6cb0; --c-female:#d6457f;
+  --focus:#0b7285;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --card:#1e2124; --text:#e8e6e1; --muted:#a3a9b1; --line:#33383d; --soft:#272b2f;
+    --main:#ff8a4c; --accent:#4cc9e0; --warn-bg:#3a2f1a; --warn-line:#8a6a22;
+    --c-male:#6aa7ee; --c-female:#f07aa8; --focus:#4cc9e0;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 48px}
+header{padding:28px 0 12px}
+h1{margin:0;font-size:clamp(24px,5vw,34px);line-height:1.25;letter-spacing:.01em}
+.sub{margin:6px 0 0;color:var(--muted);font-size:15px}
+.notice{display:none;margin:14px 0;padding:12px 14px;border-radius:10px;background:var(--warn-bg);border:1px solid var(--warn-line);font-size:15px}
+.notice.show{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.filters{margin:12px 0 16px}
+.filters summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.filters summary::-webkit-details-marker{display:none}
+.filters summary::after{content:"收合";font-weight:400;color:var(--muted);font-size:13px}
+.filters:not([open]) summary::after{content:"展開"}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px 20px;margin-top:14px}
+.fld>label,.fld>.lab{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+select{width:100%;font:inherit;font-size:15px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)}
+.range{display:flex;gap:8px;align-items:center}
+.range span{color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{margin:0;padding:7px 12px;font-size:14px;color:var(--text);cursor:pointer;border-right:1px solid var(--line);background:var(--card)}
+.seg label:last-of-type{border-right:0}
+.seg input:checked+label{background:var(--main);color:#fff}
+.seg input:focus-visible+label{outline:2px solid var(--focus);outline-offset:-2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip span{display:inline-block;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:14px;cursor:pointer;background:var(--card)}
+.chip input:checked+span{background:var(--soft);border-color:var(--text);font-weight:600}
+.chip input:focus-visible+span{outline:2px solid var(--focus)}
+.dsel{grid-column:1/-1}
+.dsel details{border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.dsel summary{cursor:pointer;font-size:14px}
+.dsel summary::after{content:none}
+.dtools{display:flex;gap:8px;margin:8px 0}
+button.mini{font:inherit;font-size:13px;padding:3px 10px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:8px;cursor:pointer}
+.dlist{display:flex;flex-wrap:wrap;gap:6px}
+.picked{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 12px;padding:10px 14px;background:var(--soft);border-radius:10px;font-size:15px}
+.picked b{color:var(--main);font-size:18px}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:900px){
+  .grid{grid-template-columns:1fr 1fr;grid-template-areas:"trend trend" "sex dist" "age dist";align-items:start}
+  .a-trend{grid-area:trend}.a-sex{grid-area:sex}.a-dist{grid-area:dist}.a-age{grid-area:age}
+}
+.card h2{margin:0 0 2px;font-size:18px}
+.card .hint{margin:0 0 10px;color:var(--muted);font-size:13.5px}
+.chart{width:100%;height:340px}
+.chart.tall{height:380px}
+.sumline{margin:0 0 8px;font-size:14.5px}
+.note{margin:6px 0 0;color:var(--muted);font-size:13px;min-height:1em}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+footer{margin-top:28px}
+footer h2{font-size:19px;margin:0 0 8px}
+footer h3{font-size:16px;margin:18px 0 6px}
+footer ul{margin:0;padding-left:1.2em}
+footer li{margin:5px 0}
+footer .card{padding:20px}
+a{color:var(--accent)}
+.small{font-size:13.5px;color:var(--muted)}
+noscript .notice{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">新北市出生率</h1>
+    <p class="sub" id="subtitle"></p>
+  </header>
+
+  <noscript><div class="notice">這個頁面需要 JavaScript 才能顯示圖表。</div></noscript>
+  <div id="cdnfail" class="notice" role="alert">圖表函式庫(ECharts)載入失敗,圖表無法顯示。請檢查網路連線後重新整理頁面,或確認 cdnjs.cloudflare.com 沒有被擋。</div>
+  <div id="datafail" class="notice" role="alert">找不到資料檔 data.js。請先執行 <code>uv run etl/build_data.py</code> 產生 docs/data.js,並讓它和 index.html 放在同一個資料夾。</div>
+
+  <details class="card filters" id="filters" open>
+    <summary>篩選條件</summary>
+    <div class="fgrid">
+      <div class="fld">
+        <span class="lab">時間範圍</span>
+        <div class="range">
+          <select id="selStart" aria-label="起始年"></select><span>至</span><select id="selEnd" aria-label="結束年"></select>
+        </div>
+      </div>
+      <div class="fld">
+        <span class="lab">指標</span>
+        <div class="seg" role="radiogroup" aria-label="指標">
+          <input type="radio" name="metric" id="m-rate" value="rate" checked><label for="m-rate">粗出生率(‰)</label>
+          <input type="radio" name="metric" id="m-births" value="births"><label for="m-births">出生數(人)</label>
+        </div>
+      </div>
+      <div class="fld">
+        <label for="selYear">選定年份(也可點趨勢圖)</label>
+        <select id="selYear"></select>
+      </div>
+      <div class="fld">
+        <label for="selCmp">比較年份(生母年齡圖)</label>
+        <select id="selCmp"></select>
+      </div>
+      <div class="fld" style="grid-column:1/-1">
+        <span class="lab">對照對象(疊在趨勢圖上)</span>
+        <div class="chips" id="cmpChips"></div>
+      </div>
+      <div class="fld dsel">
+        <span class="lab">行政區(用於第三張圖)</span>
+        <details id="distDetails">
+          <summary id="distSummary">已選 29 區</summary>
+          <div class="dtools">
+            <button type="button" class="mini" id="dAll">全選</button>
+            <button type="button" class="mini" id="dNone">清除</button>
+          </div>
+          <div class="dlist" id="distChips"></div>
+        </details>
+      </div>
+    </div>
+  </details>
+
+  <p class="picked" id="picked"></p>
+
+  <div class="grid">
+    <section class="card a-trend">
+      <div class="head"><div><h2 id="t1">新北市歷年趨勢</h2><p class="hint" id="h1">點圖上任一年份,下面的圖會一起換成那一年。縱軸從 0 起算,虛線標出 2010 年改制(臺北縣改制為新北市)。</p></div></div>
+      <div id="c1" class="chart" role="img" aria-label="新北市歷年趨勢折線圖"></div>
+      <p class="note" id="n1"></p>
+    </section>
+
+    <section class="card a-sex">
+      <h2>男女嬰出生數與出生性比例</h2>
+      <p class="hint">性比例 = 每 100 名女嬰對應的男嬰數(右軸)。</p>
+      <p class="sumline" id="sumSex"></p>
+      <div id="c2" class="chart" role="img" aria-label="新北市男女嬰出生數與性比例"></div>
+    </section>
+
+    <section class="card a-dist">
+      <div class="head">
+        <div><h2>行政區比較</h2><p class="hint" id="h3"></p></div>
+        <div class="seg" role="radiogroup" aria-label="行政區圖表模式">
+          <input type="radio" name="dmode" id="d-rank" value="rank" checked><label for="d-rank">排名</label>
+          <input type="radio" name="dmode" id="d-trend" value="trend"><label for="d-trend">歷年走勢</label>
+        </div>
+      </div>
+      <div id="c3" class="chart tall" role="img" aria-label="新北市各行政區比較"></div>
+      <p class="note" id="n3"></p>
+    </section>
+
+    <section class="card a-age">
+      <h2>生母年齡分布</h2>
+      <p class="hint" id="h4"></p>
+      <div id="c4" class="chart" role="img" aria-label="新北市生母年齡分布,選定年份與比較年份並排"></div>
+    </section>
+  </div>
+
+  <footer>
+    <div class="card">
+      <h2>怎麼讀這些數字,以及限制</h2>
+      <ul>
+        <li><b>粗出生率</b> = 全年出生數 ÷ 年中人口 × 1000,單位是「‰(千分點)」,意思是平均每 1,000 位居民在一年裡有幾位新生兒。本頁的年中人口是用「前一年底與當年底人口的平均」估算的。</li>
+        <li><b>它不等於生育意願。</b>分母是全部人口,包含長者與小孩。年輕人口多的地方,同樣的生育行為會算出較高的粗出生率;老化較快的地方會偏低。要看生育行為,應該看年齡別生育率或總生育率,本頁沒有提供。</li>
+        <li><b>虎年、龍年的起伏。</b><span id="zodiac"></span></li>
+        <li><b>2010 年前是臺北縣。</b>臺北縣在 2010 年 12 月 25 日改制為新北市,來源表把 2010 年整年都以「新北市」列出。圖上 2007–2009 年的新北市數字其實是臺北縣。臺中、臺南、高雄也在同一天由縣市合併升格,2010 年起範圍變大,和 2009 年以前不能直接比較。桃園 2014 年由縣升格為市,圖上接成同一條線。</li>
+        <li><b>小區人口少,比率會劇烈波動。</b>例如烏來區年中人口約 6 千人,多或少幾個新生兒,粗出生率就會差好幾個千分點。比較小區請搭配出生數一起看。</li>
+        <li><b>各行政區的粗出生率只有 2009 年起。</b>計算需要前一年底的人口,而區級人口資料最早到 2008 年底,所以 2007、2008 年的各區粗出生率顯示「沒有資料」,不是 0。</li>
+        <li><b>統計基準是「按發生日期」</b>(依出生當年統計),和「按登記日期」(依戶籍登記當年統計)的數字不同,不要混用。</li>
+        <li><b>只描述差異,不代表因果。</b>圖上看到的高低、升降,不能直接解讀成政策或某個因素的效果。</li>
+      </ul>
+
+      <h3>資料來源、授權與期間</h3>
+      <ul>
+        <li>來源:內政部戶政司<a href="https://www.ris.gov.tw/app/portal/346" target="_blank" rel="noopener">人口統計資料</a>。使用的表:鄉鎮市區出生死亡結婚離婚、縣市出生按生母五齡組、縣市育齡婦女生育率(粗出生率原值)、縣市人口按性別及五齡組、鄉鎮戶數及人口數;以及戶政司<a href="https://www.ris.gov.tw/rs-opendata/api/Main/docs/v1" target="_blank" rel="noopener">開放資料 API</a>(ODRP013 區級人口)。</li>
+        <li>授權:開放資料 API 與政府資料開放平臺上的相關資料集採<a href="https://data.gov.tw/license" target="_blank" rel="noopener">政府資料開放授權條款第 1 版</a>。人口統計資料「快速下載」頁面本身沒有載明授權條款,轉載請註明出處為內政部戶政司。</li>
+        <li>資料期間:<span id="period"></span>。</li>
+        <li class="small">資料整理流程(ETL)與驗證程式在 etl/ 資料夾,原始檔不經修改保存在 raw/,來源明細在 docs/data_sources.md。</li>
+      </ul>
+    </div>
+  </footer>
+</div>
+
+<script>
+// ECharts 載入失敗時顯示提示(onerror 在下方 script 標籤上)
+function echartsFailed(){ document.getElementById('cdnfail').classList.add('show'); }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js" onerror="echartsFailed()"></script>
+<script src="data.js" onerror="document.getElementById('datafail').classList.add('show')"></script>
+<script>
+(function(){
+  if (typeof echarts === 'undefined') { echartsFailed(); return; }
+  if (!window.DATA) { document.getElementById('datafail').classList.add('show'); return; }
+
+  var D = window.DATA, M = D.meta, Y = M.years, MAIN = M.main;
+  var $ = function(id){ return document.getElementById(id); };
+  var state = { s: 0, e: Y.length - 1, metric: 'rate', cmp: {'全國': true}, year: M.last, cmpYear: M.first,
+                dists: {}, dmode: 'rank' };
+  D.districts.forEach(function(d){ state.dists[d] = true; });
+
+  /* ---------- 標題 ---------- */
+  $('title').textContent = '新北市出生率 ' + M.nYears + ' 年';
+  document.title = '新北市出生率 ' + M.nYears + ' 年';
+  $('subtitle').textContent = M.first + '–' + M.last + ' 年・按出生當年(發生日期)統計・2010 年前為臺北縣';
+  $('period').textContent = M.first + ' 至 ' + M.last + ' 年(共 ' + M.nYears + ' 年,按發生日期;資料整理於 ' + M.built + ')';
+
+  /* ---------- 色盤(隨淺色/深色切換) ---------- */
+  function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function dark(){ return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches; }
+  function pal(){
+    var dk = dark();
+    return { text: css('--text'), muted: css('--muted'), line: css('--line'), card: css('--card'), main: css('--main'),
+      male: css('--c-male'), female: css('--c-female'), accent: css('--accent'),
+      cmp: { '全國': dk ? '#b6bcc4' : '#495057', '臺北市': dk ? '#6aa7ee' : '#1c7ed6', '桃園市': dk ? '#6bd68a' : '#2f9e44',
+             '臺中市': dk ? '#d28af0' : '#ae3ec9', '臺南市': dk ? '#f2c14e' : '#c98a00', '高雄市': dk ? '#4fd8b0' : '#0ca678' },
+      dist: dk ? ['#ff8a4c','#4cc9e0','#6bd68a','#d28af0','#f2c14e','#6aa7ee','#f07aa8','#4fd8b0'] :
+                 ['#d9480f','#0b7285','#2f9e44','#ae3ec9','#c98a00','#1c7ed6','#d6457f','#0ca678'] };
+  }
+
+  /* ---------- 圖表初始化 ---------- */
+  var charts = { c1: echarts.init($('c1')), c2: echarts.init($('c2')), c3: echarts.init($('c3')), c4: echarts.init($('c4')) };
+  function resizeAll(){ Object.keys(charts).forEach(function(k){ charts[k].resize(); }); }
+  window.addEventListener('resize', resizeAll);
+  if (window.ResizeObserver) { var ro = new ResizeObserver(resizeAll); ro.observe(document.body); }
+
+  function setEmpty(chart, msg, P){
+    chart.clear();
+    chart.setOption({ title: { text: msg, left: 'center', top: 'middle', textStyle: { color: P.muted, fontSize: 16, fontWeight: 'normal' } } }, true);
+  }
+  function put(chart, opt){ chart.setOption(opt, true); }
+
+  /* ---------- 小工具 ---------- */
+  var isRate = function(){ return state.metric === 'rate'; };
+  var unit = function(){ return isRate() ? '‰' : '人'; };
+  function fmt(v){
+    if (v === null || v === undefined) return '沒有資料';
+    return isRate() ? v.toFixed(2) + '‰' : Math.round(v).toLocaleString('en-US') + ' 人';
+  }
+  var yi = function(y){ return Y.indexOf(y); };
+  var cat = function(){ return Y.slice(state.s, state.e + 1).map(String); };
+  var sl = function(a){ return a.slice(state.s, state.e + 1); };
+  var anyVal = function(a){ return a.some(function(v){ return v !== null && v !== undefined; }); };
+  var axisBase = function(P){ return { axisLine: { lineStyle: { color: P.line } }, axisTick: { lineStyle: { color: P.line } }, axisLabel: { color: P.muted }, splitLine: { lineStyle: { color: P.line, opacity: .6 } }, nameTextStyle: { color: P.muted } }; };
+  function yearMark(P){ return { symbol: 'none', silent: true, label: { color: P.accent, formatter: String(state.year), position: 'end', rotate: 0, distance: 4 },
+    lineStyle: { color: P.accent, type: 'dashed', width: 1.5 }, data: [{ xAxis: String(state.year) }] }; }
+
+  /* ---------- 圖 1:趨勢 ---------- */
+  function renderTrend(){
+    var P = pal(), m = state.metric;
+    var names = [MAIN].concat(M.compare.filter(function(n){ return state.cmp[n]; }));
+    var xs = cat();
+    var series = names.map(function(n, i){
+      var isMain = n === MAIN, color = isMain ? P.main : P.cmp[n];
+      var o = { name: n, type: 'line', data: sl(D.city[n][m]), connectNulls: false, symbol: 'circle', symbolSize: isMain ? 8 : 5,
+                lineStyle: { width: isMain ? 3.5 : 1.8, color: color }, itemStyle: { color: color }, z: isMain ? 10 : 2,
+                emphasis: { focus: 'series' } };
+      return o;
+    });
+    var some = series.some(function(s){ return anyVal(s.data); });
+    if (!some) { setEmpty(charts.c1, '沒有資料', P); $('n1').textContent = ''; return; }
+    var ml = [];
+    if (state.s <= yi(M.reformYear) && yi(M.reformYear) <= state.e) {
+      ml.push({ xAxis: String(M.reformYear), label: { formatter: M.reformYear + ' 改制', color: P.muted, position: 'end', rotate: 0, distance: 4, fontSize: 12 },
+                lineStyle: { color: P.muted, type: 'dashed', width: 1.2 } });
+    }
+    ml.push({ xAxis: String(state.year), label: { formatter: state.year + ' 年', color: P.accent, position: 'end', rotate: 0, distance: 4, fontSize: 12 },
+              lineStyle: { color: P.accent, type: 'solid', width: 1.5, opacity: .7 } });
+    series[0].markLine = { symbol: 'none', silent: true, data: ml };
+    var opt = {
+      animationDuration: 300,
+      grid: { left: 12, right: 30, top: 58, bottom: 8, containLabel: true },
+      legend: { top: 0, textStyle: { color: P.text }, itemWidth: 18 },
+      tooltip: { trigger: 'axis', confine: true, backgroundColor: P.card, borderColor: P.line, textStyle: { color: P.text },
+        formatter: function(ps){
+          var i = state.s + ps[0].dataIndex, h = '<b>' + Y[i] + ' 年</b>';
+          ps.forEach(function(p){
+            var at = D.city[p.seriesName].atTime[i], extra = (at && at !== p.seriesName && at !== '全國') ? '(當時為' + at + ')' : '';
+            h += '<br>' + p.marker + p.seriesName + extra + ':' + fmt(p.value);
+          });
+          return h + '<br><span style="color:' + P.muted + ';font-size:12px">點一下選定這一年</span>';
+        } },
+      xAxis: Object.assign({ type: 'category', data: xs, boundaryGap: false }, axisBase(P)),
+      yAxis: Object.assign({ type: 'value', min: 0, name: isRate() ? '粗出生率(‰)' : '出生數(人)' }, axisBase(P)),
+      series: series
+    };
+    put(charts.c1, opt);
+    $('n1').textContent = (!isRate() && state.cmp['全國']) ? '提醒:全國出生數遠大於單一縣市,疊在一起時新北市會被壓得很扁;要比較水準,建議切換成粗出生率。' : '';
+    $('t1').textContent = '新北市歷年趨勢' + (isRate() ? '(粗出生率)' : '(出生數)');
+  }
+  charts.c1.getZr().on('click', function(ev){
+    var pt = [ev.offsetX, ev.offsetY];
+    if (!charts.c1.containPixel({ gridIndex: 0 }, pt)) return;
+    var i = Math.round(charts.c1.convertFromPixel({ gridIndex: 0 }, pt)[0]);
+    var yrs = Y.slice(state.s, state.e + 1);
+    if (i >= 0 && i < yrs.length) setYear(yrs[i]);
+  });
+
+  /* ---------- 圖 2:男女嬰與性比例 ---------- */
+  function renderSex(){
+    var P = pal(), c = D.city[MAIN], xs = cat();
+    var male = sl(c.male), female = sl(c.female);
+    var ratio = male.map(function(mv, i){ var f = female[i]; return (mv === null || f === null || f === 0) ? null : mv / f * 100; });
+    var k = yi(state.year), mv = c.male[k], fv = c.female[k], tv = c.births[k];
+    $('sumSex').innerHTML = (mv === null || fv === null) ? '<b>' + state.year + ' 年</b>:沒有資料'
+      : '<b>' + state.year + ' 年</b>:男嬰 ' + mv.toLocaleString('en-US') + '、女嬰 ' + fv.toLocaleString('en-US') + '、合計 ' + (tv === null ? '沒有資料' : tv.toLocaleString('en-US')) + ' 人;性比例 ' + (mv / fv * 100).toFixed(1);
+    if (!anyVal(male) && !anyVal(female)) { setEmpty(charts.c2, '沒有資料', P); return; }
+    var opt = {
+      animationDuration: 300,
+      grid: { left: 8, right: 8, top: 44, bottom: 8, containLabel: true },
+      legend: { top: 0, textStyle: { color: P.text } },
+      tooltip: { trigger: 'axis', confine: true, backgroundColor: P.card, borderColor: P.line, textStyle: { color: P.text },
+        formatter: function(ps){
+          var h = '<b>' + ps[0].axisValue + ' 年</b>';
+          ps.forEach(function(p){
+            var v = p.value;
+            h += '<br>' + p.marker + p.seriesName + ':' + (v === null || v === undefined ? '沒有資料' : (p.seriesIndex === 2 ? v.toFixed(1) : Math.round(v).toLocaleString('en-US') + ' 人'));
+          });
+          return h;
+        } },
+      xAxis: Object.assign({ type: 'category', data: xs }, axisBase(P)),
+      yAxis: [ Object.assign({ type: 'value', min: 0, name: '出生數(人)' }, axisBase(P)),
+               Object.assign({ type: 'value', scale: true, name: '性比例', splitLine: { show: false } }, (function(){ var a = axisBase(P); delete a.splitLine; return a; })()) ],
+      series: [
+        { name: '男嬰', type: 'bar', data: male, itemStyle: { color: P.male }, barMaxWidth: 18 },
+        { name: '女嬰', type: 'bar', data: female, itemStyle: { color: P.female }, barMaxWidth: 18 },
+        { name: '性比例(每百女嬰的男嬰數)', type: 'line', yAxisIndex: 1, data: ratio, connectNulls: false, symbolSize: 5,
+          lineStyle: { color: P.text, width: 2 }, itemStyle: { color: P.text }, markLine: yearMark(P) }
+      ]
+    };
+    put(charts.c2, opt);
+  }
+
+  /* ---------- 圖 3:行政區 ---------- */
+  function renderDistrict(){
+    var P = pal(), m = state.metric, sel = D.districts.filter(function(d){ return state.dists[d]; });
+    var el = $('c3'), note = $('n3');
+    note.textContent = '';
+    $('h3').textContent = state.dmode === 'rank'
+      ? state.year + ' 年各行政區' + (isRate() ? '粗出生率' : '出生數') + '排名(虛線為新北市全市)。'
+      : state.s === state.e ? '' : Y[state.s] + '–' + Y[state.e] + ' 年各行政區' + (isRate() ? '粗出生率' : '出生數') + '走勢;滑鼠移到線上可突顯。';
+    if (!sel.length) { el.style.height = '340px'; charts.c3.resize(); setEmpty(charts.c3, '請至少選一個行政區', P); return; }
+
+    if (state.dmode === 'rank') {
+      var k = yi(state.year);
+      var items = sel.map(function(d){ return { d: d, v: D.district[d][m][k] }; });
+      var have = items.filter(function(x){ return x.v !== null; }).sort(function(a, b){ return b.v - a.v; });
+      var miss = items.filter(function(x){ return x.v === null; }).map(function(x){ return x.d; });
+      if (miss.length) note.textContent = '沒有資料:' + (miss.length > 10 ? miss.slice(0, 10).join('、') + ' 等 ' + miss.length + ' 區' : miss.join('、')) + '(' + state.year + ' 年' + (isRate() ? '缺前一年底人口,無法計算' : '來源無數值') + ')';
+      if (!have.length) { el.style.height = '340px'; charts.c3.resize(); setEmpty(charts.c3, '沒有資料', P); return; }
+      el.style.height = Math.max(340, have.length * 22 + 70) + 'px'; charts.c3.resize();
+      var whole = D.city[MAIN][m][k];
+      var opt = {
+        animationDuration: 300,
+        grid: { left: 8, right: 56, top: 28, bottom: 8, containLabel: true },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, confine: true, backgroundColor: P.card, borderColor: P.line, textStyle: { color: P.text },
+          formatter: function(ps){ var p = ps[0], d = p.name, at = D.district[d].atTime[k]; return '<b>' + d + '</b>' + (at && at !== d ? '(當時為' + at + ')' : '') + '<br>' + state.year + ' 年:' + fmt(p.value); } },
+        xAxis: Object.assign({ type: 'value', min: 0, name: unit() }, axisBase(P)),
+        yAxis: Object.assign({ type: 'category', inverse: true, data: have.map(function(x){ return x.d; }) }, axisBase(P), { splitLine: { show: false } }),
+        series: [{ type: 'bar', data: have.map(function(x){ return x.v; }), barMaxWidth: 16, itemStyle: { color: P.main, borderRadius: [0, 4, 4, 0] },
+          label: { show: true, position: 'right', color: P.muted, formatter: function(p){ return isRate() ? p.value.toFixed(2) : Math.round(p.value).toLocaleString('en-US'); } },
+          markLine: whole === null ? undefined : { symbol: 'none', silent: true, label: { formatter: '全市 ' + (isRate() ? whole.toFixed(2) : Math.round(whole).toLocaleString('en-US')), color: P.accent, position: 'start', rotate: 0, distance: 4 },
+            lineStyle: { color: P.accent, type: 'dashed' }, data: [{ xAxis: whole }] } }]
+      };
+      put(charts.c3, opt);
+    } else {
+      el.style.height = '380px'; charts.c3.resize();
+      var xs = cat();
+      var series = sel.map(function(d, i){
+        return { name: d, type: 'line', data: sl(D.district[d][m]), connectNulls: false, symbol: 'circle', symbolSize: 4,
+                 lineStyle: { width: 1.6, color: P.dist[i % P.dist.length], opacity: .85 }, itemStyle: { color: P.dist[i % P.dist.length] },
+                 emphasis: { focus: 'series', lineStyle: { width: 3.5 } }, z: 2 };
+      });
+      if (!series.some(function(s){ return anyVal(s.data); })) { setEmpty(charts.c3, '沒有資料', P); note.textContent = isRate() ? '各行政區的粗出生率從 2009 年起才有;請把時間範圍拉到 2009 年之後,或改看出生數。' : ''; return; }
+      series[0].markLine = yearMark(P);
+      var opt2 = {
+        animationDuration: 300,
+        grid: { left: 8, right: 14, top: sel.length <= 10 ? 52 : 12, bottom: 8, containLabel: true },
+        legend: sel.length <= 10 ? { top: 0, type: 'scroll', textStyle: { color: P.text } } : { show: false },
+        tooltip: { trigger: 'item', confine: true, backgroundColor: P.card, borderColor: P.line, textStyle: { color: P.text },
+          formatter: function(p){ if (p.componentType === 'markLine') return ''; return '<b>' + p.seriesName + '</b><br>' + p.name + ' 年:' + fmt(p.value); } },
+        xAxis: Object.assign({ type: 'category', data: xs, boundaryGap: false }, axisBase(P)),
+        yAxis: Object.assign({ type: 'value', min: 0, name: unit() }, axisBase(P)),
+        series: series
+      };
+      put(charts.c3, opt2);
+      if (isRate() && state.s < yi(2009)) note.textContent = '2009 年以前沒有各區粗出生率(缺前一年底人口),線會從 2009 年開始。';
+    }
+  }
+
+  /* ---------- 圖 4:生母年齡 ---------- */
+  function renderAge(){
+    var P = pal(), G = D.ageGroups, a = D.age[String(state.year)], b = D.age[String(state.cmpYear)];
+    $('h4').textContent = state.year + ' 年(選定)與 ' + state.cmpYear + ' 年(比較)各生母年齡組占當年出生數的比例;滑鼠移上去可看出生數。';
+    if (!a && !b) { setEmpty(charts.c4, '沒有資料', P); return; }
+    function mk(y, rec, color){
+      return { name: y + ' 年' + (state.year === state.cmpYear ? '(同一年)' : ''), type: 'bar', barMaxWidth: 34, itemStyle: { color: color, borderRadius: [4, 4, 0, 0] },
+        data: rec ? rec.share.map(function(v){ return v === null ? null : v * 100; }) : G.map(function(){ return null; }),
+        label: { show: true, position: 'top', color: P.muted, fontSize: 11, formatter: function(p){ return p.value === null || p.value === undefined ? '' : p.value.toFixed(1) + '%'; } },
+        _rec: rec };
+    }
+    var s1 = mk(state.year, a, P.main), s2 = mk(state.cmpYear, b, P.accent);
+    var opt = {
+      animationDuration: 300,
+      grid: { left: 8, right: 8, top: 44, bottom: 8, containLabel: true },
+      legend: { top: 0, textStyle: { color: P.text } },
+      tooltip: { trigger: 'axis', confine: true, backgroundColor: P.card, borderColor: P.line, textStyle: { color: P.text },
+        formatter: function(ps){
+          var h = '<b>' + ps[0].axisValue + '</b>';
+          ps.forEach(function(p){
+            var rec = p.seriesIndex === 0 ? a : b, n = rec ? rec.births[p.dataIndex] : null;
+            h += '<br>' + p.marker + p.seriesName + ':' + (p.value === null || p.value === undefined ? '沒有資料' : p.value.toFixed(1) + '%(' + (n === null ? '沒有資料' : n.toLocaleString('en-US') + ' 人') + ')');
+          });
+          return h;
+        } },
+      xAxis: Object.assign({ type: 'category', data: G }, axisBase(P)),
+      yAxis: Object.assign({ type: 'value', min: 0, name: '占比(%)' }, axisBase(P)),
+      series: [s1, s2]
+    };
+    put(charts.c4, opt);
+  }
+
+  /* ---------- 摘要 / 文案 ---------- */
+  function renderPicked(){
+    $('picked').innerHTML = '<span>目前選定 <b>' + state.year + ' 年</b>' + (state.year < 2010 ? '(當時為臺北縣)' : '') + '</span>' +
+      '<span>比較年份 ' + state.cmpYear + ' 年</span><span>' + (isRate() ? '粗出生率' : '出生數') + '</span>';
+    var n = D.districts.filter(function(d){ return state.dists[d]; }).length;
+    $('distSummary').textContent = '已選 ' + n + ' / ' + D.districts.length + ' 區';
+  }
+  function zodiacText(){
+    var b = D.city[MAIN].births, g = function(y){ var i = yi(y); return i < 0 ? null : b[i]; };
+    var parts = [], f = function(v){ return v.toLocaleString('en-US'); };
+    var t10 = g(2010), d12 = g(2012), d24 = g(2024), t22 = g(2022), n11 = g(2011), n13 = g(2013);
+    if (t10 !== null && n11 !== null) parts.push('2010 虎年新北市(當年為臺北縣改制年)出生 ' + f(t10) + ' 人,低於次年的 ' + f(n11) + ' 人');
+    if (d12 !== null && n11 !== null && n13 !== null) parts.push('2012 龍年有 ' + f(d12) + ' 人,明顯高於前後年(' + f(n11) + '、' + f(n13) + ')');
+    if (d24 !== null && g(2023) !== null) parts.push('但 2024 龍年(' + f(d24) + ' 人)比 2023 年(' + f(g(2023)) + ' 人)更少,看不到同樣的回升');
+    var s = parts.length ? '在這份資料裡,' + parts.join(';') + '。' : '';
+    return s + '民間習俗會讓部分年份的出生數偏高或偏低,但近年的長期下降趨勢很強,單看一個年份容易誤判,請看整段走勢。';
+  }
+  $('zodiac').textContent = zodiacText();
+
+  /* ---------- 控制項 ---------- */
+  function fillYears(sel, from, to, val){
+    sel.innerHTML = '';
+    for (var i = from; i <= to; i++) { var o = document.createElement('option'); o.value = Y[i]; o.textContent = Y[i] + ' 年'; if (Y[i] === val) o.selected = true; sel.appendChild(o); }
+  }
+  fillYears($('selStart'), 0, Y.length - 1, Y[state.s]);
+  fillYears($('selEnd'), 0, Y.length - 1, Y[state.e]);
+  fillYears($('selYear'), 0, Y.length - 1, state.year);
+  fillYears($('selCmp'), 0, Y.length - 1, state.cmpYear);
+
+  function chip(parent, name, checked, onchange, extraName){
+    var l = document.createElement('label'); l.className = 'chip';
+    var i = document.createElement('input'); i.type = 'checkbox'; i.checked = checked; i.value = name;
+    var s = document.createElement('span'); s.textContent = name;
+    l.appendChild(i); l.appendChild(s); parent.appendChild(l);
+    i.addEventListener('change', function(){ onchange(name, i.checked); });
+    return i;
+  }
+  M.compare.forEach(function(n){ chip($('cmpChips'), n, !!state.cmp[n], function(nm, c){ state.cmp[nm] = c; renderTrend(); }); });
+  var distInputs = {};
+  D.districts.forEach(function(d){ distInputs[d] = chip($('distChips'), d, true, function(nm, c){ state.dists[nm] = c; renderPicked(); renderDistrict(); }); });
+  $('dAll').addEventListener('click', function(){ D.districts.forEach(function(d){ state.dists[d] = true; distInputs[d].checked = true; }); renderPicked(); renderDistrict(); });
+  $('dNone').addEventListener('click', function(){ D.districts.forEach(function(d){ state.dists[d] = false; distInputs[d].checked = false; }); renderPicked(); renderDistrict(); });
+
+  function syncRangeSelects(){ $('selStart').value = Y[state.s]; $('selEnd').value = Y[state.e]; }
+  $('selStart').addEventListener('change', function(){ state.s = yi(+this.value); if (state.s > state.e) state.e = state.s; syncRangeSelects(); clampYear(); renderAll(); });
+  $('selEnd').addEventListener('change', function(){ state.e = yi(+this.value); if (state.e < state.s) state.s = state.e; syncRangeSelects(); clampYear(); renderAll(); });
+  function clampYear(){
+    if (yi(state.year) < state.s) state.year = Y[state.s];
+    if (yi(state.year) > state.e) state.year = Y[state.e];
+    $('selYear').value = state.year;
+  }
+  $('selYear').addEventListener('change', function(){ setYear(+this.value); });
+  $('selCmp').addEventListener('change', function(){ state.cmpYear = +this.value; renderPicked(); renderAge(); });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name=metric]'), function(r){
+    r.addEventListener('change', function(){ if (r.checked) { state.metric = r.value; renderAll(); } });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name=dmode]'), function(r){
+    r.addEventListener('change', function(){ if (r.checked) { state.dmode = r.value; renderDistrict(); } });
+  });
+  function setYear(y){
+    if (yi(y) < 0) return;
+    state.year = y; $('selYear').value = y; renderAll();
+  }
+
+  function renderAll(){ renderPicked(); renderTrend(); renderSex(); renderDistrict(); renderAge(); }
+
+  // 手機預設收合篩選面板,讓圖表先出現在畫面上
+  if (window.matchMedia && matchMedia('(max-width: 700px)').matches) { $('filters').removeAttribute('open'); }
+  if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'); (mq.addEventListener ? mq.addEventListener('change', renderAll) : mq.addListener(renderAll)); }
+
+  renderAll();
+  resizeAll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+# 目前 ETL 未使用的大型 API 備份(約 840 MB),需要時用 etl/download_ris_api.sh 重新下載
+raw/ris_api/ODRP028/
+raw/ris_api/ODRP055/
+raw/ris_api/ODRP056/
+raw/ris_api/ODRP059/
+docs/api_download.log
